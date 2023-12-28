@@ -1,14 +1,14 @@
 """Datasets and data utils."""
-from codis.data.infinite_dsprites import (
+from idsprites.dataset import (
     InfiniteDSprites,
     ContinualDSpritesMap,
     RandomDSprites,
     RandomDSpritesMap,
     InfiniteDSpritesAnalogies,
     InfiniteDSpritesTriplets,
-    Latents,
+    Factors,
 )
-from codis.data.continual_benchmark import (
+from idsprites.continual_benchmark import (
     ContinualBenchmark,
     ContinualBenchmarkRehearsal,
 )
