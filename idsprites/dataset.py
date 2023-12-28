@@ -10,20 +10,20 @@ from scipy.interpolate import splev, splprep
 from sklearn.decomposition import PCA
 from torch.utils.data import Dataset, IterableDataset
 
-BaseLatents = namedtuple(
-    "BaseLatents", "color shape shape_id scale orientation position_x, position_y"
+BaseFactors = namedtuple(
+    "BaseFactors", "color shape shape_id scale orientation position_x, position_y"
 )
 
 
-class Latents(BaseLatents):
-    """Latent variables defining a single image."""
+class Factors(BaseFactors):
+    """Factors of variation defining a single image."""
 
     def __getitem__(self, key):
         return getattr(self, key)
 
     def to(self, device, **kwargs):
-        """Move the latents to a device."""
-        return Latents(
+        """Move the factors to a device."""
+        return Factors(
             color=self.color.to(device, **kwargs),
             shape=self.shape.to(device, **kwargs),
             shape_id=self.shape_id.to(device, **kwargs),
@@ -95,7 +95,7 @@ class InfiniteDSprites(IterableDataset):
             "position_y": position_y_range,
         }
         self.scale_factor = 0.45
-        self.num_latents = len(self.ranges) + 1
+        self.num_factors = len(self.ranges) + 1
         self.dataset_size = dataset_size
         self.counter = 0
         self.current_shape_index = 0
@@ -135,11 +135,11 @@ class InfiniteDSprites(IterableDataset):
         return cls(**config)
 
     def __iter__(self):
-        """Generate an infinite stream of images and latent vectors.
+        """Generate an infinite stream of images and factors of variation.
         Args:
             None
         Returns:
-            An infinite stream of (image, latents) tuples."""
+            An infinite stream of (image, factors) tuples."""
         while True:
             if self.shapes is None:
                 shape = self.generate_shape()  # infinite variant
@@ -155,7 +155,7 @@ class InfiniteDSprites(IterableDataset):
                     return
                 self.counter += 1
                 color = np.array(colors.to_rgb(color))
-                latents = Latents(
+                factors = Factors(
                     color,
                     shape,
                     self.current_shape_id,
@@ -164,8 +164,8 @@ class InfiniteDSprites(IterableDataset):
                     position_x,
                     position_y,
                 )
-                img = self.draw(latents)
-                yield img, latents
+                img = self.draw(factors)
+                yield img, factors
             self.current_shape_index += 1
 
     def generate_shape(self):
@@ -267,24 +267,24 @@ class InfiniteDSprites(IterableDataset):
         x, y = splev(u_new, spline_params, der=0)
         return np.array([x, y])
 
-    def draw(self, latents: Latents, channels_first=True, debug=False):
-        """Draw an image based on the values of the latents.
+    def draw(self, factors: Factors, channels_first=True, debug=False):
+        """Draw an image based on the values of the factors.
         Args:
-            latents: The latents to use for drawing.
+            factors: The factors to use for drawing.
             channels_first: Whether to return the image with the channel dimension first.
         Returns:
             The image as a numpy array.
         """
         canvas = np.zeros((self.canvas_size, self.canvas_size, 3)).astype(np.int32)
         canvas[:, :] = self.background_color
-        shape = self.apply_scale(latents.shape, latents.scale)
-        shape = self.apply_orientation(shape, latents.orientation)
-        shape = self.apply_position(shape, latents.position_x, latents.position_y)
-        color = tuple(int(255 * c) for c in latents.color)
+        shape = self.apply_scale(factors.shape, factors.scale)
+        shape = self.apply_orientation(shape, factors.orientation)
+        shape = self.apply_position(shape, factors.position_x, factors.position_y)
+        color = tuple(int(255 * c) for c in factors.color)
 
         self.draw_shape(shape, canvas, color)
         if self.orientation_marker:
-            self.draw_orientation_marker(canvas, latents)
+            self.draw_orientation_marker(canvas, factors)
         if debug:
             self.add_debug_info(shape, canvas)
         if self.grayscale:
@@ -340,11 +340,11 @@ class InfiniteDSprites(IterableDataset):
         shape = shape.T.astype(np.int32)
         cv2.fillPoly(img=canvas, pts=[shape], color=color, lineType=cv2.LINE_AA)
 
-    def draw_orientation_marker(self, canvas, latents):
+    def draw_orientation_marker(self, canvas, factors):
         """Mark the right half of the shape."""
-        theta = latents.orientation - np.pi / 2
+        theta = factors.orientation - np.pi / 2
         center = np.array([0, 0]).reshape(2, 1)
-        y0, x0 = self.apply_position(center, latents.position_x, latents.position_y)
+        y0, x0 = self.apply_position(center, factors.position_x, factors.position_y)
 
         def rotate_point(x, y):
             """Rotate the coordinate system by -theta around the center of the shape."""
@@ -396,15 +396,15 @@ class InfiniteDSprites(IterableDataset):
             canvas[:, :, 1], canvas[:, :, 2]
         )
 
-    def sample_latents(self):
-        """Sample a random set of latents."""
+    def sample_factors(self):
+        """Sample a random set of factors."""
         if self.shapes is not None:
             index = np.random.choice(len(self.shapes))
             self.current_shape_index = index
             shape = self.shapes[index]
         else:
             shape = self.generate_shape()
-        return Latents(
+        return Factors(
             color=np.array(colors.to_rgb(np.random.choice(self.ranges["color"]))),
             shape=shape,
             shape_id=None,
@@ -416,14 +416,13 @@ class InfiniteDSprites(IterableDataset):
 
 
 class InfiniteDSpritesNoImages(InfiniteDSprites):
-    """Only return the latents."""
+    """Only return the factors."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def __iter__(self):
-        """Generate an infinite stream of latent vectors.
-        Note: We set shape to None and only return shape_id."""
+        """Generate an infinite stream of factors with shape set to None."""
         while True:
             if self.shapes is not None and self.current_shape_index >= len(self.shapes):
                 return
@@ -434,7 +433,7 @@ class InfiniteDSpritesNoImages(InfiniteDSprites):
                     return
                 self.counter += 1
                 color = np.array(colors.to_rgb(color))
-                yield Latents(
+                yield Factors(
                     color,
                     None,
                     self.current_shape_id,
@@ -490,7 +489,7 @@ class RandomDSprites(InfiniteDSprites):
         Args:
             None
         Yields:
-            A tuple of (image, latents).
+            A tuple of (image, factors).
         """
         while self.dataset_size is None or self.counter < self.dataset_size:
             self.counter += 1
@@ -500,11 +499,11 @@ class RandomDSprites(InfiniteDSprites):
                 shape = self.shapes[index]
             else:
                 shape = self.generate_shape()
-            latents = self.sample_latents()._replace(
+            factors = self.sample_factors()._replace(
                 shape=shape, shape_id=self.current_shape_id
             )
-            image = self.draw(latents)
-            yield image, latents
+            image = self.draw(factors)
+            yield image, factors
 
 
 class RandomDSpritesMap(Dataset):
@@ -515,19 +514,19 @@ class RandomDSpritesMap(Dataset):
         assert (
             self.dataset.dataset_size is not None
         ), "Dataset size must be finite. Please set dataset_size."
-        self.data, self.latents = zip(*list(self.dataset))
+        self.data, self.factors = zip(*list(self.dataset))
         self.data = list(self.data)
-        self.latents = list(self.latents)
+        self.factors = list(self.factors)
 
     @property
     def targets(self):
-        return [latents.shape_id for latents in self.latents]
+        return [factors.shape_id for factors in self.factors]
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        return self.data[index], self.latents[index]
+        return self.data[index], self.factors[index]
 
 
 class InfiniteDSpritesTriplets(InfiniteDSprites):
@@ -547,19 +546,19 @@ class InfiniteDSpritesTriplets(InfiniteDSprites):
         """
         while self.dataset_size is None or self.counter < self.dataset_size:
             action = np.random.choice(list(self.ranges.keys()))
-            latents_original = self.sample_latents()
-            latents_transform = self.sample_latents()
+            factors_original = self.sample_factors()
+            factors_transformed = self.sample_factors()
             if action != "shape" and np.allclose(
-                latents_original[action], latents_transform[action]
+                factors_original[action], factors_transformed[action]
             ):
                 continue
             self.counter += 1
-            latents_target = latents_original._replace(
-                **{action: latents_transform[action]}
+            factors_target = factors_original._replace(
+                **{action: factors_transformed[action]}
             )
-            image_original = self.draw(latents_original)
-            image_transform = self.draw(latents_transform)
-            image_target = self.draw(latents_target)
+            image_original = self.draw(factors_original)
+            image_transform = self.draw(factors_transformed)
+            image_target = self.draw(factors_target)
             yield ((image_original, image_transform, image_target), action)
 
 
@@ -586,8 +585,8 @@ class InfiniteDSpritesAnalogies(InfiniteDSprites):
         """
         while self.dataset_size is None or self.counter < self.dataset_size:
             self.counter += 1
-            source_latents = self.sample_latents()
-            target_latents = self.sample_latents()
+            source_factors = self.sample_factors()
+            target_factors = self.sample_factors()
 
             reference_color = colors.to_rgb(np.random.choice(self.ranges["color"]))
             reference_shape = (
@@ -605,20 +604,20 @@ class InfiniteDSpritesAnalogies(InfiniteDSprites):
 
             reference_source, reference_target, query_source, query_target = (
                 self.draw(
-                    source_latents._replace(
+                    source_factors._replace(
                         shape=reference_shape, color=reference_color
                     )
                 ),
                 self.draw(
-                    target_latents._replace(
+                    target_factors._replace(
                         shape=reference_shape, color=reference_color
                     )
                 ),
                 self.draw(
-                    source_latents._replace(shape=query_shape, color=query_color)
+                    source_factors._replace(shape=query_shape, color=query_color)
                 ),
                 self.draw(
-                    target_latents._replace(shape=query_shape, color=query_color)
+                    target_factors._replace(shape=query_shape, color=query_color)
                 ),
             )
             grid = np.concatenate(
