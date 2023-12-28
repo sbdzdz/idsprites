@@ -1,2 +1,3 @@
 # Infinite dSprites
-Easily generate continual learning benchmarks.
+
+Easily generate simple continual learning benchmarks.
