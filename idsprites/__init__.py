@@ -1,5 +1,5 @@
 """Datasets and data utils."""
-from idsprites.dataset import (
+from idsprites.infinite_dsprites import (
     InfiniteDSprites,
     ContinualDSpritesMap,
     RandomDSprites,

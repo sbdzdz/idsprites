@@ -11,7 +11,7 @@ import PIL
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from idsprites.dataset import (
+from idsprites import (
     InfiniteDSprites,
     InfiniteDSpritesAnalogies,
     Factors,

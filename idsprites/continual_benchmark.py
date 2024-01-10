@@ -6,7 +6,7 @@ import numpy as np
 from omegaconf import DictConfig
 from torch.utils.data import Dataset, random_split
 
-from idsprites.dataset import ContinualDSpritesMap
+from idsprites import ContinualDSpritesMap
 
 
 class ContinualBenchmark:

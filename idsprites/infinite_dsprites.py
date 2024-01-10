@@ -415,7 +415,7 @@ class InfiniteDSprites(IterableDataset):
         )
 
 
-class InfiniteDSpritesNoImages(InfiniteDSprites):
+class InfiniteDSpritesFactors(InfiniteDSprites):
     """Only return the factors."""
 
     def __init__(self, *args, **kwargs):
@@ -449,7 +449,7 @@ class ContinualDSpritesMap(Dataset):
     """Map-style (finite) continual learning dsprites dataset."""
 
     def __init__(self, *args, **kwargs):
-        self.dataset = InfiniteDSpritesNoImages(*args, **kwargs)
+        self.dataset = InfiniteDSpritesFactors(*args, **kwargs)
         assert (
             self.dataset.dataset_size is not None or self.dataset.shapes is not None
         ), "Dataset size must be finite. Please set dataset_size or pass a list of shapes."
@@ -630,7 +630,7 @@ class InfiniteDSpritesAnalogies(InfiniteDSprites):
 
             # add horizontal and vertical borders
             border_width = self.canvas_size // 128 or 1
-            mid = self.canvas_size // 2
+            mid = self.img_size // 2
             grid[:, mid - border_width : mid + border_width, :] = 1.0
             grid[:, :, mid - border_width : mid + border_width] = 1.0
 
