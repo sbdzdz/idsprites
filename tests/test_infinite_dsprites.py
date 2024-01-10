@@ -2,7 +2,7 @@
 import pytest
 import numpy as np
 
-from codis.data import (
+from idsprites import (
     InfiniteDSprites,
     InfiniteDSpritesAnalogies,
     InfiniteDSpritesTriplets,
