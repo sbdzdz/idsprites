@@ -17,6 +17,7 @@ dependencies = [
     "opencv-python>=4.8.1",
     "scipy>=1.11.4",
     "scikit-learn>=1.3.2",
+    "torch>=2.1.2",
     "omegaconf>=2.3.0",
 ]
 
@@ -24,10 +25,6 @@ dependencies = [
 visualization = [
     "imageio>=2.13.0",
     "tqdm>=4.66.1",
-]
-examples = [
-    "idsprites[visualization]",
-    "torch>=2.1.2",
 ]
 
 [tool.hatch.build]
