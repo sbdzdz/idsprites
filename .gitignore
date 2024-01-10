@@ -1,0 +1,10 @@
+# vscode
+.vscode
+
+# virtualenv
+venv
+virtualenv
+
+# cpython
+*.pyc
+__pycache__
