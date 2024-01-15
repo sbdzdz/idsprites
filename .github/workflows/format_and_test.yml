@@ -1,4 +1,4 @@
-name: Linting, formatting, and testing
+name: Formatting, linting, and testing
 
 on:
   push:
