@@ -31,20 +31,43 @@ def generate_dataset(args):
         for subdir in [exemplars_dir, train_dir, val_dir, test_dir]:
             subdir.mkdir(parents=True, exist_ok=True)
 
-        dataset = ids.ContinualDSpritesMap(
-            img_size=args.img_size, shapes=task_shapes, shape_ids=task_shape_ids
-        )
+        np.save(task_dir / "shapes.npy", task_shapes)
         for i, exemplar in enumerate(task_exemplars):
             exemplar = to_image(exemplar)
             exemplar.save(exemplars_dir / f"exemplar_{i}.png")
+
+        dataset = create_dataset(args, task_shapes, task_shape_ids)
 
         train, val, test = random_split(
             dataset, [args.train_split, args.val_split, args.test_split]
         )
         for split, subdir in zip([train, val, test], [train_dir, val_dir, test_dir]):
+            split_factors = []
             for i, (image, factors) in enumerate(split):
+                split_factors.append(factors.replace(shape=None))
                 image = to_image(image)
                 image.save(subdir / f"sample_{i}_shape_{factors.shape_id}.png")
+            split_factors = ids.Factors(*zip(*split_factors))
+            np.savez(subdir / "factors.npz", **split_factors._asdict())
+
+
+def create_dataset(args, task_shapes, task_shape_ids):
+    """Create a dataset for a single task."""
+    n = args.factor_resolution
+    scale_range = np.linspace(0.5, 1.0, n)
+    orientation_range = np.linspace(0, 2 * np.pi * (n) / (n + 1), n)
+    position_x_range = np.linspace(0, 1, n)
+    position_y_range = np.linspace(0, 1, n)
+    dataset = ids.ContinualDSpritesMap(
+        img_size=args.img_size,
+        scale_range=scale_range,
+        orientation_range=orientation_range,
+        position_x_range=position_x_range,
+        position_y_range=position_y_range,
+        shapes=task_shapes,
+        shape_ids=task_shape_ids,
+    )
+    return dataset
 
 
 def to_image(array: np.ndarray):
@@ -97,6 +120,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_split", type=int, default=0.8)
     parser.add_argument("--val_split", type=int, default=0.1)
     parser.add_argument("--test_split", type=int, default=0.1)
+    parser.add_argument("--factor_resolution", type=int, default=10)
     args = parser.parse_args()
 
     generate_dataset(args)
