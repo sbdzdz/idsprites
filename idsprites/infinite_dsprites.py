@@ -188,40 +188,6 @@ class InfiniteDSprites(IterableDataset):
 
         return shape
 
-    def center_and_scale(self, shape):
-        """Center and scale a shape."""
-        shape = shape - shape.mean(axis=1, keepdims=True)
-        _, _, w, h = cv2.boundingRect((shape * 1000).T.astype(np.int32))
-        shape[0, :] = shape[0, :] / (w / 1000)
-        shape[1, :] = shape[1, :] / (h / 1000)
-
-        transformed_shape = self.apply_scale(shape, 1)
-        transformed_shape = self.apply_position(transformed_shape, 0.5, 0.5)
-        canvas = np.zeros((self.canvas_size, self.canvas_size, 3)).astype(np.int32)
-        self.draw_shape(shape=transformed_shape, canvas=canvas, color=(255, 255, 255))
-        center = self.get_center(canvas)[::-1]
-        center = np.expand_dims(center - self.canvas_size // 2, 1) / (
-            self.scale_factor * self.canvas_size
-        )
-        shape = shape - center
-
-        return shape
-
-    def align(self, shape):
-        """Align the principal axis of the shape with the y-axis."""
-        pca = PCA(n_components=2)
-        pca.fit(shape.T)
-
-        # Get the principal components
-        principal_components = pca.components_
-
-        # Find the angle between the major axis and the y-axis
-        major_axis = principal_components[0]
-        angle_rad = np.arctan2(major_axis[1], major_axis[0]) + 0.5 * np.pi
-        shape = self.apply_orientation(shape, -angle_rad)
-
-        return shape
-
     def sample_vertex_positions(
         self,
         min_verts: int = 5,
@@ -268,6 +234,40 @@ class InfiniteDSprites(IterableDataset):
         u_new = np.linspace(u.min(), u.max(), num_spline_points)
         x, y = splev(u_new, spline_params, der=0)
         return np.array([x, y])
+
+    def align(self, shape):
+        """Align the principal axis of the shape with the y-axis."""
+        pca = PCA(n_components=2)
+        pca.fit(shape.T)
+
+        # Get the principal components
+        principal_components = pca.components_
+
+        # Find the angle between the major axis and the y-axis
+        major_axis = principal_components[0]
+        angle_rad = np.arctan2(major_axis[1], major_axis[0]) + 0.5 * np.pi
+        shape = self.apply_orientation(shape, -angle_rad)
+
+        return shape
+
+    def center_and_scale(self, shape):
+        """Center and scale a shape."""
+        shape = shape - shape.mean(axis=1, keepdims=True)
+        _, _, w, h = cv2.boundingRect((shape * 1000).T.astype(np.int32))
+        shape[0, :] = shape[0, :] / (w / 1000)
+        shape[1, :] = shape[1, :] / (h / 1000)
+
+        transformed_shape = self.apply_scale(shape, 1)
+        transformed_shape = self.apply_position(transformed_shape, 0.5, 0.5)
+        canvas = np.zeros((self.canvas_size, self.canvas_size, 3)).astype(np.int32)
+        self.draw_shape(shape=transformed_shape, canvas=canvas, color=(255, 255, 255))
+        center = self.get_center(canvas)[::-1]
+        center = np.expand_dims(center - self.canvas_size // 2, 1) / (
+            self.scale_factor * self.canvas_size
+        )
+        shape = shape - center
+
+        return shape
 
     def draw(self, factors: Factors, channels_first=True, debug=False):
         """Draw an image based on the values of the factors.
