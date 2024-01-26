@@ -1,4 +1,5 @@
 """Class definitions for the infinite dSprites dataset."""
+
 from collections import namedtuple
 from itertools import product
 
@@ -9,6 +10,7 @@ from matplotlib import colors
 from scipy.interpolate import splev, splprep
 from sklearn.decomposition import PCA
 from torch.utils.data import Dataset, IterableDataset
+from numba import jit
 
 BaseFactors = namedtuple(
     "BaseFactors", "color shape shape_id scale orientation position_x, position_y"
@@ -352,14 +354,22 @@ class InfiniteDSprites(IterableDataset):
             y_prime = -(x - x0) * np.sin(-theta) + (y - y0) * np.cos(-theta) + y0
             return x_prime, y_prime
 
-        # rotate shape pixel coordinates
-        shape_pixels = np.argwhere(np.any(canvas != self.background_color, axis=2))
+        shape_pixels = self.find_shape_pixels(canvas, self.background_color)
         x, _ = rotate_point(shape_pixels[:, 0], shape_pixels[:, 1])
 
-        # select the right half of the shape
         right_half = shape_pixels[x > x0]
-
         canvas[right_half[:, 0], right_half[:, 1]] = self.orientation_marker_color
+
+    @staticmethod
+    @jit(nopython=True)
+    def find_shape_pixels(canvas, background_color):
+        background_color = np.array(background_color, dtype=np.int32)
+
+        mask = canvas == background_color
+        mask = mask[:, :, 0] & mask[:, :, 1] & mask[:, :, 2]
+        shape_pixels = np.argwhere(~mask)
+
+        return shape_pixels
 
     def add_debug_info(self, shape, canvas):
         """Add debug info to the canvas."""

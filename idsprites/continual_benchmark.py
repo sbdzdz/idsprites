@@ -1,4 +1,5 @@
 """Class-incremental continual learning dataset."""
+
 from collections import Counter
 from itertools import zip_longest
 
