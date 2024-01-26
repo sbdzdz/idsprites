@@ -1,4 +1,5 @@
 """Class definitions for the infinite dSprites dataset."""
+
 from collections import namedtuple
 from itertools import product
 
