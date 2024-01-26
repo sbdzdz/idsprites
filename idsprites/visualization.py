@@ -220,8 +220,8 @@ def draw_shapes(
         ax.axis("off")
         if fill_shape:
             if canonical:
-                latents = Factors(
-                    color=dataset.sample_latents().color,
+                factors = Factors(
+                    color=dataset.sample_factors().color,
                     shape=shape,
                     shape_id=None,
                     scale=1.0,
@@ -230,11 +230,11 @@ def draw_shapes(
                     position_y=0.5,
                 )
             else:
-                latents = dataset.sample_latents().replace(shape=shape)
-            img = dataset.draw(latents, channels_first=False, debug=debug)
+                factors = dataset.sample_factors().replace(shape=shape)
+            img = dataset.draw(factors, channels_first=False, debug=debug)
             ax.imshow(img, cmap="Greys_r", aspect="equal")
         else:
-            ax.plot(shape[0], shape[1], color=dataset.sample_latents().color)
+            ax.plot(shape[0], shape[1], color=dataset.sample_factors().color)
 
     path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(path)
@@ -285,7 +285,7 @@ def draw_shapes_animated(
         orientation_marker_color=orientation_marker_color,
     )
     shapes = [dataset.generate_shape() for _ in range(nrows * ncols)]
-    colors = [dataset.sample_latents().color for _ in range(nrows * ncols)]
+    colors = [dataset.sample_factors().color for _ in range(nrows * ncols)]
     if factor is None:
         factors = generate_multi_factor_sequence(dataset)
     else:
@@ -412,7 +412,7 @@ def draw_shape_interpolation(
         orientation_marker_color=orientation_marker_color,
     )
     colors = [
-        [dataset.sample_latents().color for _ in range(num_shapes)]
+        [dataset.sample_factors().color for _ in range(num_shapes)]
         for _ in range(nrows * ncols)
     ]
     shapes = [
@@ -491,13 +491,13 @@ def draw_orientation_normalization(
         orientation_range=np.linspace(0.2 * np.pi, 1.8 * np.pi, 32),
     )
 
-    start_latents = [dataset.sample_latents() for _ in range(num_shapes)]
+    start_factors = [dataset.sample_factors() for _ in range(num_shapes)]
     sequence = []
-    for latent in start_latents:
-        latents = [
+    for factor in start_factors:
+        factors = [
             Factors(
-                color=latent.color,
-                shape=latent.shape,
+                color=factor.color,
+                shape=factor.shape,
                 shape_id=None,
                 scale=scale,
                 orientation=orientation,
@@ -505,41 +505,41 @@ def draw_orientation_normalization(
                 position_y=position_y,
             )
             for scale, orientation, position_x, position_y in generate_normalization_sequence(
-                latent, num_frames
+                factor, num_frames
             )
         ]
-        sequence.append(latents)
+        sequence.append(factors)
     sequence = list(zip(*sequence))  # transpose the nested list
 
     frames = [
-        [dataset.draw(latent, channels_first=False) for latent in latents]
-        for latents in sequence
+        [dataset.draw(factor, channels_first=False) for factor in factors]
+        for factors in sequence
     ]
     save_animation(path, frames, nrows, ncols, fig_height, bg_color, fps)
 
 
-def generate_normalization_sequence(latent, num_frames):
+def generate_normalization_sequence(factor, num_frames):
     """Generate a sequence of factors"""
     scales, orientations, positions_x, positions_y = (
         2.0 * np.ones(num_frames),
-        latent.orientation * np.ones(num_frames),
+        factor.orientation * np.ones(num_frames),
         0.5 * np.ones(num_frames),
         0.5 * np.ones(num_frames),
     )
     chunk = num_frames // 4
 
-    if latent.orientation <= np.pi:
-        orientations[:chunk] = np.linspace(latent.orientation, 0.0, chunk)
+    if factor.orientation <= np.pi:
+        orientations[:chunk] = np.linspace(factor.orientation, 0.0, chunk)
         orientations[2 * chunk : 3 * chunk] = np.linspace(
-            0.0, latent.orientation, chunk
+            0.0, factor.orientation, chunk
         )
     else:
-        orientations[:chunk] = np.linspace(latent.orientation, 2 * np.pi, chunk)
+        orientations[:chunk] = np.linspace(factor.orientation, 2 * np.pi, chunk)
         orientations[2 * chunk : 3 * chunk] = np.linspace(
-            2 * np.pi, latent.orientation, chunk
+            2 * np.pi, factor.orientation, chunk
         )
     orientations[chunk : 2 * chunk] = 0.0
-    orientations[3 * chunk :] = latent.orientation
+    orientations[3 * chunk :] = factor.orientation
 
     return zip(scales, orientations, positions_x, positions_y)
 
@@ -603,27 +603,27 @@ def draw_hard_analogy_task(
         None
     """
     dataset = InfiniteDSprites(img_size=256)
-    latents_reference_source = dataset.sample_latents()
-    latents_reference_target = dataset.sample_latents()._replace(
-        shape=latents_reference_source.shape
+    factors_reference_source = dataset.sample_factors()
+    factors_reference_target = dataset.sample_factors()._replace(
+        shape=factors_reference_source.shape
     )
-    latents_query_source = dataset.sample_latents()
-    latents_query_target = latents_query_source
+    factors_query_source = dataset.sample_factors()
+    factors_query_target = factors_query_source
 
-    for latent in ["scale", "orientation", "position_x", "position_y"]:
-        delta = latents_reference_target[latent] - latents_reference_source[latent]
-        latent_range = dataset.ranges[latent]
-        range_min, range_max = latent_range.min(), latent_range.max()
-        new_value = latents_query_source[latent] + delta
+    for factor in ["scale", "orientation", "position_x", "position_y"]:
+        delta = factors_reference_target[factor] - factors_reference_source[factor]
+        factor_range = dataset.ranges[factor]
+        range_min, range_max = factor_range.min(), factor_range.max()
+        new_value = factors_query_source[factor] + delta
         new_value = range_min + (new_value - range_min) % (range_max - range_min)
-        latents_query_target = latents_query_target._replace(**{latent: new_value})
+        factors_query_target = factors_query_target._replace(**{factor: new_value})
 
     # draw the images on a single grid
     images = [
-        dataset.draw(latents_reference_source),
-        dataset.draw(latents_reference_target),
-        dataset.draw(latents_query_source),
-        dataset.draw(latents_query_target),
+        dataset.draw(factors_reference_source),
+        dataset.draw(factors_reference_target),
+        dataset.draw(factors_query_source),
+        dataset.draw(factors_query_target),
     ]
     _, axes = plt.subplots(
         nrows=2,
