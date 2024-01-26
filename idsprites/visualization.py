@@ -18,7 +18,7 @@ from idsprites import (
     Factors,
 )
 
-repo_root = Path(__file__).parent.parent.parent
+repo_root = Path(__file__).parent.parent
 
 COLORS = [
     "white",
