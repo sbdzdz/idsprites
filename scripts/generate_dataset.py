@@ -2,11 +2,12 @@ import argparse
 from itertools import zip_longest
 from pathlib import Path
 
+import numpy as np
+from tqdm import tqdm
 from PIL import Image
 from torch.utils.data import random_split
 
 import idsprites as ids
-import numpy as np
 
 
 def generate_dataset(args):
@@ -17,7 +18,7 @@ def generate_dataset(args):
     shape_ids = list(range(num_shapes))
 
     for task, task_shapes, task_shape_ids, task_exemplars in zip(
-        range(args.num_tasks),
+        tqdm(range(args.num_tasks)),
         grouper(shapes, args.shapes_per_task),
         grouper(shape_ids, args.shapes_per_task),
         grouper(exemplars, args.shapes_per_task),
