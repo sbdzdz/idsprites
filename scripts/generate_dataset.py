@@ -1,13 +1,44 @@
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 from itertools import zip_longest
 from pathlib import Path
 
 import numpy as np
-from tqdm import tqdm
 from PIL import Image
 from torch.utils.data import random_split
+from tqdm import tqdm
 
 import idsprites as ids
+
+
+def process_task(task, task_shapes, task_shape_ids, task_exemplars, args):
+    task_dir = args.out_dir / f"task_{task + 1}"
+    exemplars_dir = task_dir / "exemplars"
+    train_dir = task_dir / "train"
+    val_dir = task_dir / "val"
+    test_dir = task_dir / "test"
+
+    for subdir in [exemplars_dir, train_dir, val_dir, test_dir]:
+        subdir.mkdir(parents=True, exist_ok=True)
+
+    np.save(task_dir / "shapes.npy", task_shapes)
+    for i, exemplar in enumerate(task_exemplars):
+        exemplar = to_image(exemplar)
+        exemplar.save(exemplars_dir / f"exemplar_{i}.png")
+
+    dataset = create_dataset(args, task_shapes, task_shape_ids)
+
+    train, val, test = random_split(
+        dataset, [args.train_split, args.val_split, args.test_split]
+    )
+    for split, subdir in zip([train, val, test], [train_dir, val_dir, test_dir]):
+        split_factors = []
+        for i, (image, factors) in enumerate(split):
+            split_factors.append(factors.replace(shape=None))
+            image = to_image(image)
+            image.save(subdir / f"sample_{i}_shape_{factors.shape_id}.png")
+        split_factors = ids.Factors(*zip(*split_factors))
+        np.savez(subdir / "factors.npz", **split_factors._asdict())
 
 
 def generate_dataset(args):
@@ -17,39 +48,26 @@ def generate_dataset(args):
     exemplars = generate_exemplars(shapes, args.img_size)
     shape_ids = list(range(num_shapes))
 
-    for task, task_shapes, task_shape_ids, task_exemplars in zip(
-        tqdm(range(args.num_tasks)),
-        grouper(shapes, args.shapes_per_task),
-        grouper(shape_ids, args.shapes_per_task),
-        grouper(exemplars, args.shapes_per_task),
-    ):
-        task_dir = args.out_dir / f"task_{task + 1}"
-        exemplars_dir = task_dir / "exemplars"
-        train_dir = task_dir / "train"
-        val_dir = task_dir / "val"
-        test_dir = task_dir / "test"
+    tasks = list(range(args.num_tasks))
+    task_shapes = list(grouper(shapes, args.shapes_per_task))
+    task_shape_ids = list(grouper(shape_ids, args.shapes_per_task))
+    task_exemplars = list(grouper(exemplars, args.shapes_per_task))
 
-        for subdir in [exemplars_dir, train_dir, val_dir, test_dir]:
-            subdir.mkdir(parents=True, exist_ok=True)
-
-        np.save(task_dir / "shapes.npy", task_shapes)
-        for i, exemplar in enumerate(task_exemplars):
-            exemplar = to_image(exemplar)
-            exemplar.save(exemplars_dir / f"exemplar_{i}.png")
-
-        dataset = create_dataset(args, task_shapes, task_shape_ids)
-
-        train, val, test = random_split(
-            dataset, [args.train_split, args.val_split, args.test_split]
+    # parallelize over tasks
+    with ProcessPoolExecutor() as executor:
+        list(
+            tqdm(
+                executor.map(
+                    process_task,
+                    tasks,
+                    task_shapes,
+                    task_shape_ids,
+                    task_exemplars,
+                    [args] * args.num_tasks,
+                ),
+                total=args.num_tasks,
+            )
         )
-        for split, subdir in zip([train, val, test], [train_dir, val_dir, test_dir]):
-            split_factors = []
-            for i, (image, factors) in enumerate(split):
-                split_factors.append(factors.replace(shape=None))
-                image = to_image(image)
-                image.save(subdir / f"sample_{i}_shape_{factors.shape_id}.png")
-            split_factors = ids.Factors(*zip(*split_factors))
-            np.savez(subdir / "factors.npz", **split_factors._asdict())
 
 
 def create_dataset(args, task_shapes, task_shape_ids):
