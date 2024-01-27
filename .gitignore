@@ -8,3 +8,9 @@ virtualenv
 # cpython
 *.pyc
 __pycache__
+
+# os
+.DS_Store
+
+# data
+data/
