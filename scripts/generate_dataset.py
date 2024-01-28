@@ -129,6 +129,19 @@ def generate_exemplars(shapes, img_size: int):
     ]
 
 
+def int_or_float(value):
+    """Convert a string to an int or float."""
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError as err:
+            raise argparse.ArgumentTypeError(
+                f"{value} is not a valid int or float"
+            ) from err
+
+
 if __name__ == "__main__":
     root = Path(__file__).parent.parent
     parser = argparse.ArgumentParser()
@@ -136,9 +149,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_tasks", type=int, default=10)
     parser.add_argument("--shapes_per_task", type=int, default=10)
     parser.add_argument("--img_size", type=int, default=256)
-    parser.add_argument("--train_split", type=int, default=0.8)
-    parser.add_argument("--val_split", type=int, default=0.1)
-    parser.add_argument("--test_split", type=int, default=0.1)
+    parser.add_argument("--train_split", type=int_or_float, default=0.98)
+    parser.add_argument("--val_split", type=int_or_float, default=0.01)
+    parser.add_argument("--test_split", type=int_or_float, default=0.01)
     parser.add_argument("--factor_resolution", type=int, default=10)
     args = parser.parse_args()
 
