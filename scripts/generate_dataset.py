@@ -33,12 +33,17 @@ def process_task(task, task_shapes, task_shape_ids, task_exemplars, args):
     )
     for split, subdir in zip([train, val, test], [train_dir, val_dir, test_dir]):
         split_factors = []
+        labels = []
         for i, (image, factors) in enumerate(split):
             split_factors.append(factors.replace(shape=None))
             image = to_image(image)
-            image.save(subdir / f"sample_{i}_shape_{factors.shape_id}.png")
+            path = subdir / f"sample_{i}.png"
+            image.save(path)
+            labels.append(f"{path.name} {factors.shape_id}")
         split_factors = ids.Factors(*zip(*split_factors))
         np.savez(subdir / "factors.npz", **split_factors._asdict())
+        with open(subdir / "labels.txt", "w") as f:
+            f.write("\n".join(labels))
 
 
 def generate_dataset(args):
