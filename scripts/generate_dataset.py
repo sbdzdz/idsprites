@@ -12,6 +12,8 @@ import idsprites as ids
 
 
 def process_task(task, task_shapes, task_shape_ids, task_exemplars, args):
+    if args.continue_from is not None and task >= args.continue_from:
+        return
     task_dir = args.out_dir / f"task_{task + 1}"
     exemplars_dir = task_dir / "exemplars"
     train_dir = task_dir / "train"
@@ -158,6 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--val_split", type=int_or_float, default=0.01)
     parser.add_argument("--test_split", type=int_or_float, default=0.01)
     parser.add_argument("--factor_resolution", type=int, default=10)
+    parser.add_argument("--continue_from", type=int, default=None)
     args = parser.parse_args()
 
     generate_dataset(args)
