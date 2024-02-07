@@ -6,11 +6,12 @@ from itertools import product
 import cv2
 import numpy as np
 import numpy.typing as npt
+import torch
 from matplotlib import colors
+from numba import jit
 from scipy.interpolate import splev, splprep
 from sklearn.decomposition import PCA
 from torch.utils.data import Dataset, IterableDataset
-from numba import jit
 
 BaseFactors = namedtuple(
     "BaseFactors", "color shape shape_id scale orientation position_x, position_y"
@@ -23,16 +24,28 @@ class Factors(BaseFactors):
     def __getitem__(self, key):
         return getattr(self, key)
 
-    def to(self, device, **kwargs):
+    def to_tensor(self, **kwargs):
+        """Convert the factors to a tensor."""
+        return Factors(
+            color=torch.tensor(self.color, **kwargs),
+            shape=torch.tensor(self.shape, **kwargs),
+            shape_id=torch.tensor(self.shape_id, **kwargs),
+            scale=torch.tensor(self.scale, **kwargs),
+            orientation=torch.tensor(self.orientation, **kwargs),
+            position_x=torch.tensor(self.position_x, **kwargs),
+            position_y=torch.tensor(self.position_y, **kwargs),
+        )
+
+    def to(self, *args, **kwargs):
         """Move the factors to a device."""
         return Factors(
-            color=self.color.to(device, **kwargs),
-            shape=self.shape.to(device, **kwargs),
-            shape_id=self.shape_id.to(device, **kwargs),
-            scale=self.scale.to(device, **kwargs),
-            orientation=self.orientation.to(device, **kwargs),
-            position_x=self.position_x.to(device, **kwargs),
-            position_y=self.position_y.to(device, **kwargs),
+            color=self.color.to(*args, **kwargs),
+            shape=self.shape.to(*args, **kwargs),
+            shape_id=self.shape_id.to(*args, **kwargs),
+            scale=self.scale.to(*args, **kwargs),
+            orientation=self.orientation.to(*args, **kwargs),
+            position_x=self.position_x.to(*args, **kwargs),
+            position_y=self.position_y.to(*args, **kwargs),
         )
 
     def replace(self, **kwargs):
