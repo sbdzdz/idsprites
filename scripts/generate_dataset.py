@@ -160,7 +160,6 @@ if __name__ == "__main__":
     parser.add_argument("--val_split", type=int_or_float, default=0.01)
     parser.add_argument("--test_split", type=int_or_float, default=0.01)
     parser.add_argument("--factor_resolution", type=int, default=10)
-    parser.add_argument("--continue_from", type=int, default=None)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
