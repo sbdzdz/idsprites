@@ -12,6 +12,8 @@ import idsprites as ids
 
 
 def process_task(task, task_shapes, task_shape_ids, task_exemplars, args):
+    if not args.overwrite and (args.out_dir / f"task_{task + 1}").exists():
+        return
     task_dir = args.out_dir / f"task_{task + 1}"
     exemplars_dir = task_dir / "exemplars"
     train_dir = task_dir / "train"
@@ -33,12 +35,17 @@ def process_task(task, task_shapes, task_shape_ids, task_exemplars, args):
     )
     for split, subdir in zip([train, val, test], [train_dir, val_dir, test_dir]):
         split_factors = []
+        labels = []
         for i, (image, factors) in enumerate(split):
             split_factors.append(factors.replace(shape=None))
             image = to_image(image)
-            image.save(subdir / f"sample_{i}_shape_{factors.shape_id}.png")
+            path = subdir / f"sample_{i}.png"
+            image.save(path)
+            labels.append(f"{path.name} {factors.shape_id}")
         split_factors = ids.Factors(*zip(*split_factors))
         np.savez(subdir / "factors.npz", **split_factors._asdict())
+        with open(subdir / "labels.txt", "w") as f:
+            f.write("\n".join(labels))
 
 
 def generate_dataset(args):
@@ -153,6 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--val_split", type=int_or_float, default=0.01)
     parser.add_argument("--test_split", type=int_or_float, default=0.01)
     parser.add_argument("--factor_resolution", type=int, default=10)
+    parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
     generate_dataset(args)
