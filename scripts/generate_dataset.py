@@ -84,7 +84,7 @@ def create_dataset(args, task_shapes, task_shape_ids):
     orientation_range = np.linspace(0, 2 * np.pi * (n) / (n + 1), n)
     position_x_range = np.linspace(0, 1, n)
     position_y_range = np.linspace(0, 1, n)
-    dataset = ids.ContinualDSpritesMap(
+    dataset = ids.InfiniteDSpritesMap(
         img_size=args.img_size,
         scale_range=scale_range,
         orientation_range=orientation_range,
