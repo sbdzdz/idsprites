@@ -14,7 +14,6 @@ from tqdm import tqdm
 
 from idsprites import (
     InfiniteDSprites,
-    InfiniteDSpritesAnalogies,
     Factors,
 )
 
