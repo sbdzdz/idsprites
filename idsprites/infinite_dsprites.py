@@ -1,4 +1,4 @@
-"""Class definitions for the infinite dSprites dataset."""
+"""Iterable and map-style datasets of shapes undergoing transformations."""
 
 from collections import namedtuple
 from itertools import product
@@ -109,17 +109,20 @@ class InfiniteDSprites(IterableDataset):
             "position_x": position_x_range,
             "position_y": position_y_range,
         }
+
         self.scale_factor = 0.45
         self.num_factors = len(self.ranges) + 1
         self.dataset_size = dataset_size
         self.counter = 0
         self.current_shape_index = 0
+
         if isinstance(shapes, list):
             self.shapes = shapes
         elif isinstance(shapes, int):
             self.shapes = [self.generate_shape() for _ in range(shapes)]
         else:
             self.shapes = None
+
         self.shape_ids = shape_ids
         self.orientation_marker = orientation_marker
         self.orientation_marker_color = tuple(
@@ -131,7 +134,7 @@ class InfiniteDSprites(IterableDataset):
         self.grayscale = grayscale
 
     @property
-    def current_shape_id(self):
+    def current_shape_id(self) -> int:
         """Return the ID of the current shape."""
         if self.shape_ids is None:
             return self.current_shape_index
@@ -150,12 +153,7 @@ class InfiniteDSprites(IterableDataset):
         return cls(**config)
 
     def __iter__(self):
-        """Generate an infinite stream of images and factors of variation.
-        Args:
-            None
-        Returns:
-            An infinite stream of (image, factors) tuples.
-        """
+        """Generate an infinite stream of (image, factors) tuples."""
         while True:
             if self.shapes is None:
                 shape = self.generate_shape()  # infinite variant
@@ -172,19 +170,19 @@ class InfiniteDSprites(IterableDataset):
                 self.counter += 1
                 color = np.array(colors.to_rgb(color))
                 factors = Factors(
-                    color,
-                    shape,
-                    self.current_shape_id,
-                    scale,
-                    orientation,
-                    position_x,
-                    position_y,
+                    color=color,
+                    shape=shape,
+                    shape_id=self.current_shape_id,
+                    scale=scale,
+                    orientation=orientation,
+                    position_x=position_x,
+                    position_y=position_y,
                 )
                 img = self.draw(factors)
                 yield img, factors
             self.current_shape_index += 1
 
-    def generate_shape(self):
+    def generate_shape(self) -> npt.NDArray:
         """Generate random vertices and connect them with straight lines or a smooth curve.
         Args:
             None
@@ -199,7 +197,6 @@ class InfiniteDSprites(IterableDataset):
         )
         shape = self.align(shape)
         shape = self.center_and_scale(shape)
-
         return shape
 
     def sample_vertex_positions(
@@ -249,28 +246,22 @@ class InfiniteDSprites(IterableDataset):
         x, y = splev(u_new, spline_params, der=0)
         return np.array([x, y])
 
-    def align(self, shape):
+    def align(self, shape: npt.NDArray) -> npt.NDArray:
         """Align the principal axis of the shape with the y-axis."""
         pca = PCA(n_components=2)
         pca.fit(shape.T)
-
-        # Get the principal components
         principal_components = pca.components_
-
-        # Find the angle between the major axis and the y-axis
         major_axis = principal_components[0]
         angle_rad = np.arctan2(major_axis[1], major_axis[0]) + 0.5 * np.pi
         shape = self.apply_orientation(shape, -angle_rad)
-
         return shape
 
-    def center_and_scale(self, shape):
+    def center_and_scale(self, shape: npt.NDArray) -> npt.NDArray:
         """Center and scale a shape."""
         shape = shape - shape.mean(axis=1, keepdims=True)
         _, _, w, h = cv2.boundingRect((shape * 1000).T.astype(np.int32))
         shape[0, :] = shape[0, :] / (w / 1000)
         shape[1, :] = shape[1, :] / (h / 1000)
-
         transformed_shape = self.apply_scale(shape, 1)
         transformed_shape = self.apply_position(transformed_shape, 0.5, 0.5)
         canvas = np.zeros((self.canvas_size, self.canvas_size, 3)).astype(np.int32)
@@ -280,7 +271,6 @@ class InfiniteDSprites(IterableDataset):
             self.scale_factor * self.canvas_size
         )
         shape = shape - center
-
         return shape
 
     def draw(self, factors: Factors, channels_first=True, debug=False):
@@ -310,13 +300,13 @@ class InfiniteDSprites(IterableDataset):
         canvas = canvas.astype(np.float32) / 255.0
         return canvas
 
-    def apply_scale(self, shape: npt.NDArray, scale: float):
+    def apply_scale(self, shape: npt.NDArray, scale: float) -> npt.NDArray:
         """Apply a scale to a shape."""
         height = self.canvas_size
         return self.scale_factor * height * scale * shape
 
     @staticmethod
-    def apply_orientation(shape: npt.NDArray, orientation: float):
+    def apply_orientation(shape: npt.NDArray, orientation: float) -> npt.NDArray:
         """Apply an orientation to a shape.
         Args:
             shape: An array of shape (2, num_points).
@@ -351,12 +341,12 @@ class InfiniteDSprites(IterableDataset):
         return shape + position
 
     @staticmethod
-    def draw_shape(shape, canvas, color):
+    def draw_shape(shape: npt.NDArray, canvas: npt.NDArray, color: tuple) -> None:
         """Draw a shape on a canvas."""
         shape = shape.T.astype(np.int32)
         cv2.fillPoly(img=canvas, pts=[shape], color=color, lineType=cv2.LINE_AA)
 
-    def draw_orientation_marker(self, canvas, factors):
+    def draw_orientation_marker(self, canvas: npt.NDArray, factors: Factors) -> None:
         """Mark the right half of the shape."""
         theta = factors.orientation - np.pi / 2
         center = np.array([0, 0]).reshape(2, 1)
@@ -376,16 +366,15 @@ class InfiniteDSprites(IterableDataset):
 
     @staticmethod
     @jit(nopython=True)
-    def find_shape_pixels(canvas, background_color):
+    def find_shape_pixels(canvas: npt.NDArray, background_color: tuple) -> npt.NDArray:
+        """Find the pixels belonging to the shape."""
         background_color = np.array(background_color, dtype=np.int32)
-
         mask = canvas == background_color
         mask = mask[:, :, 0] & mask[:, :, 1] & mask[:, :, 2]
         shape_pixels = np.argwhere(~mask)
-
         return shape_pixels
 
-    def add_debug_info(self, shape, canvas):
+    def add_debug_info(self, shape: npt.NDArray, canvas: npt.NDArray) -> None:
         """Add debug info to the canvas."""
         shape_center = self.get_center(canvas)
         x, y, w, h = cv2.boundingRect(shape.T.astype(np.int32))
@@ -408,19 +397,19 @@ class InfiniteDSprites(IterableDataset):
         )
 
     @staticmethod
-    def get_center(canvas):
+    def get_center(canvas: npt.NDArray) -> npt.NDArray:
         """Get the center of the shape."""
         foreground_pixels = np.argwhere(np.any(canvas != [0, 0, 0], axis=2))
         return np.mean(foreground_pixels, axis=0)
 
     @staticmethod
-    def is_monochrome(canvas):
+    def is_monochrome(canvas: npt.NDArray) -> bool:
         """Check if a canvas is monochrome (all channels are the same)."""
         return np.allclose(canvas[:, :, 0], canvas[:, :, 1]) and np.allclose(
             canvas[:, :, 1], canvas[:, :, 2]
         )
 
-    def sample_factors(self):
+    def sample_factors(self) -> Factors:
         """Sample a random set of factors."""
         if self.shapes is not None:
             index = np.random.choice(len(self.shapes))
@@ -458,13 +447,13 @@ class InfiniteDSpritesFactors(InfiniteDSprites):
                 self.counter += 1
                 color = np.array(colors.to_rgb(color))
                 yield Factors(
-                    color,
-                    None,
-                    self.current_shape_id,
-                    scale,
-                    orientation,
-                    position_x,
-                    position_y,
+                    color=color,
+                    shape=None,
+                    shape_id=self.current_shape_id,
+                    scale=scale,
+                    orientation=orientation,
+                    position_x=position_x,
+                    position_y=position_y,
                 )
             self.current_shape_index += 1
 
@@ -485,15 +474,15 @@ class InfiniteDSpritesMap(Dataset):
     def targets(self):
         return [factors.shape_id for factors in self.data]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         shape_index = self.data[index].shape_id
         if self.dataset.shape_ids is not None:
             shape_index = self.dataset.shape_ids.index(shape_index)
         shape = self.dataset.shapes[shape_index]
-        factors = self.data[index]._replace(shape=shape)
+        factors = self.data[index].replace(shape=shape)
         img = self.x_transform(self.dataset.draw(factors))
         factors = self.y_transform(factors)
         return img, factors
@@ -509,12 +498,7 @@ class RandomDSprites(InfiniteDSprites):
         super().__init__(*args, **kwargs)
 
     def __iter__(self):
-        """Generate an infinite stream of images.
-        Args:
-            None
-        Yields:
-            A tuple of (image, factors).
-        """
+        """Generate an infinite stream of (image, factors) tuples."""
         while self.dataset_size is None or self.counter < self.dataset_size:
             self.counter += 1
             if self.shapes is not None:
@@ -523,7 +507,7 @@ class RandomDSprites(InfiniteDSprites):
                 shape = self.shapes[index]
             else:
                 shape = self.generate_shape()
-            factors = self.sample_factors()._replace(
+            factors = self.sample_factors().replace(
                 shape=shape, shape_id=self.current_shape_id
             )
             image = self.draw(factors)
@@ -546,8 +530,8 @@ class RandomDSpritesMap(Dataset):
     def targets(self):
         return [factors.shape_id for factors in self.factors]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         return self.data[index], self.factors[index]
