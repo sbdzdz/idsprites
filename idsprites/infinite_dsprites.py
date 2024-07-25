@@ -53,7 +53,7 @@ class Factors(BaseFactors):
 
 
 class InfiniteDSprites(IterableDataset):
-    """Infinite dataset of procedurally generated shapes undergoing transformations."""
+    """Infinite dataset of shapes undergoing transformations."""
 
     def __init__(
         self,
@@ -154,7 +154,8 @@ class InfiniteDSprites(IterableDataset):
         Args:
             None
         Returns:
-            An infinite stream of (image, factors) tuples."""
+            An infinite stream of (image, factors) tuples.
+        """
         while True:
             if self.shapes is None:
                 shape = self.generate_shape()  # infinite variant
@@ -439,7 +440,7 @@ class InfiniteDSprites(IterableDataset):
 
 
 class InfiniteDSpritesFactors(InfiniteDSprites):
-    """Only return the factors."""
+    """Infinite (iterable) dataset of factors of variation."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -468,8 +469,8 @@ class InfiniteDSpritesFactors(InfiniteDSprites):
             self.current_shape_index += 1
 
 
-class ContinualDSpritesMap(Dataset):
-    """Map-style (finite) continual learning dsprites dataset."""
+class InfiniteDSpritesMap(Dataset):
+    """Finite (map-style) dataset of shapes undergoing transformations."""
 
     def __init__(self, *args, **kwargs):
         self.dataset = InfiniteDSpritesFactors(*args, **kwargs)
@@ -499,7 +500,7 @@ class ContinualDSpritesMap(Dataset):
 
 
 class RandomDSprites(InfiniteDSprites):
-    """Infinite dataset of randomly transformed shapes.
+    """Infinite (iterable) dataset of random shapes with random transforms.
     The shape is sampled from a given list or generated procedurally.
     The transformations are sampled randomly at every step.
     """
@@ -530,7 +531,7 @@ class RandomDSprites(InfiniteDSprites):
 
 
 class RandomDSpritesMap(Dataset):
-    """Map-style (finite) random dsprites dataset."""
+    """Finite (map-style) dataset of random shapes with random transforms."""
 
     def __init__(self, *args, **kwargs) -> None:
         self.dataset = RandomDSprites(*args, **kwargs)
@@ -550,111 +551,3 @@ class RandomDSpritesMap(Dataset):
 
     def __getitem__(self, index):
         return self.data[index], self.factors[index]
-
-
-class InfiniteDSpritesTriplets(InfiniteDSprites):
-    """Infinite dataset of triplets of images.
-    For details see the composition task proposed by Montero et al. (2020).
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __iter__(self):
-        """Generate an infinite stream of tuples consisting of a triplet of images and an action encoding.
-        Args:
-            None
-        Yields:
-            A tuple of ((image_original, image_transform, image_target), action).
-        """
-        while self.dataset_size is None or self.counter < self.dataset_size:
-            action = np.random.choice(list(self.ranges.keys()))
-            factors_original = self.sample_factors()
-            factors_transformed = self.sample_factors()
-            if action != "shape" and np.allclose(
-                factors_original[action], factors_transformed[action]
-            ):
-                continue
-            self.counter += 1
-            factors_target = factors_original._replace(
-                **{action: factors_transformed[action]}
-            )
-            image_original = self.draw(factors_original)
-            image_transform = self.draw(factors_transformed)
-            image_target = self.draw(factors_target)
-            yield ((image_original, image_transform, image_target), action)
-
-
-class InfiniteDSpritesAnalogies(InfiniteDSprites):
-    """Infinite dataset of image analogies."""
-
-    def __init__(self, *args, reference_shape=None, query_shape=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.canvas_size = self.img_size // 2
-        self.reference_shape = reference_shape
-        self.query_shape = query_shape
-
-    def __iter__(self):
-        """Generate an infinite stream of images representing an analogy task.
-        Each output array represents a 2x2 grid of images. Top row: reference
-        source, reference target. Bottom row: query source, query target. The task
-        is to infer a transformation between reference source and reference target
-        and apply it to query source to obtain query target. Reference source and
-        query source differ only in shape.
-        Args:
-            None
-        Yields:
-            An image grid as a single numpy array.
-        """
-        while self.dataset_size is None or self.counter < self.dataset_size:
-            self.counter += 1
-            source_factors = self.sample_factors()
-            target_factors = self.sample_factors()
-
-            reference_color = colors.to_rgb(np.random.choice(self.ranges["color"]))
-            reference_shape = (
-                self.reference_shape
-                if self.reference_shape is not None
-                else self.generate_shape()
-            )
-
-            query_color = colors.to_rgb(np.random.choice(self.ranges["color"]))
-            query_shape = (
-                self.query_shape
-                if self.query_shape is not None
-                else self.generate_shape()
-            )
-
-            reference_source, reference_target, query_source, query_target = (
-                self.draw(
-                    source_factors._replace(
-                        shape=reference_shape, color=reference_color
-                    )
-                ),
-                self.draw(
-                    target_factors._replace(
-                        shape=reference_shape, color=reference_color
-                    )
-                ),
-                self.draw(
-                    source_factors._replace(shape=query_shape, color=query_color)
-                ),
-                self.draw(
-                    target_factors._replace(shape=query_shape, color=query_color)
-                ),
-            )
-            grid = np.concatenate(
-                [
-                    np.concatenate([reference_source, reference_target], axis=2),
-                    np.concatenate([query_source, query_target], axis=2),
-                ],
-                axis=1,
-            )
-
-            # add horizontal and vertical borders
-            border_width = self.canvas_size // 128 or 1
-            mid = self.img_size // 2
-            grid[:, mid - border_width : mid + border_width, :] = 1.0
-            grid[:, :, mid - border_width : mid + border_width] = 1.0
-
-            yield grid
