@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA
 from torch.utils.data import Dataset, IterableDataset
 
 BaseFactors = namedtuple(
-    "BaseFactors", "color shape shape_id scale orientation position_x, position_y"
+    "BaseFactors", "shape color shape_id scale orientation position_x, position_y"
 )
 
 
@@ -27,8 +27,8 @@ class Factors(BaseFactors):
     def to_tensor(self, **kwargs):
         """Convert the factors to a tensor."""
         return Factors(
-            color=torch.tensor(self.color, **kwargs),
             shape=torch.tensor(self.shape, **kwargs),
+            color=torch.tensor(self.color, **kwargs),
             shape_id=torch.tensor(self.shape_id, **kwargs),
             scale=torch.tensor(self.scale, **kwargs),
             orientation=torch.tensor(self.orientation, **kwargs),
@@ -39,8 +39,8 @@ class Factors(BaseFactors):
     def to(self, *args, **kwargs):
         """Move the factors to a device."""
         return Factors(
-            color=self.color.to(*args, **kwargs),
             shape=self.shape.to(*args, **kwargs),
+            color=self.color.to(*args, **kwargs),
             shape_id=self.shape_id.to(*args, **kwargs),
             scale=self.scale.to(*args, **kwargs),
             orientation=self.orientation.to(*args, **kwargs),
@@ -79,8 +79,8 @@ class InfiniteDSprites(IterableDataset):
             orientation_range: The range of orientations to sample from.
             position_x_range: The range of x positions to sample from.
             position_y_range: The range of y positions to sample from.
-            dataset_size: The number of images to generate. Note that `shapes` also controls
-                the number of images generated.
+            dataset_size: The number of images to generate. Set to None to generate images forever.
+                Takes precedence over the shapes argument.
             shapes: The number of shapes to generate or a list of shapes to use. Set
                 to None to generate random shapes forever.
             shape_ids: The IDs of the shapes. If None, the shape ID is set to its index.
@@ -170,8 +170,8 @@ class InfiniteDSprites(IterableDataset):
                 self.counter += 1
                 color = np.array(colors.to_rgb(color))
                 factors = Factors(
-                    color=color,
                     shape=shape,
+                    color=color,
                     shape_id=self.current_shape_id,
                     scale=scale,
                     orientation=orientation,
@@ -418,8 +418,8 @@ class InfiniteDSprites(IterableDataset):
         else:
             shape = self.generate_shape()
         return Factors(
-            color=np.array(colors.to_rgb(np.random.choice(self.ranges["color"]))),
             shape=shape,
+            color=np.array(colors.to_rgb(np.random.choice(self.ranges["color"]))),
             shape_id=None,
             scale=np.random.choice(self.ranges["scale"]),
             orientation=np.random.choice(self.ranges["orientation"]),
@@ -447,8 +447,8 @@ class InfiniteDSpritesFactors(InfiniteDSprites):
                 self.counter += 1
                 color = np.array(colors.to_rgb(color))
                 yield Factors(
-                    color=color,
                     shape=None,
+                    color=color,
                     shape_id=self.current_shape_id,
                     scale=scale,
                     orientation=orientation,

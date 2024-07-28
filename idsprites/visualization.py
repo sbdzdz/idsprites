@@ -220,8 +220,8 @@ def draw_shapes(
         if fill_shape:
             if canonical:
                 factors = Factors(
-                    color=dataset.sample_factors().color,
                     shape=shape,
+                    color=dataset.sample_factors().color,
                     shape_id=None,
                     scale=1.0,
                     orientation=0.0,
@@ -295,8 +295,8 @@ def draw_shapes_animated(
         [
             dataset.draw(
                 Factors(
-                    color=color,
                     shape=shape,
+                    color=color,
                     shape_id=None,
                     scale=scale,
                     orientation=orientation,
@@ -425,8 +425,8 @@ def draw_shape_interpolation(
         [
             dataset.draw(
                 Factors(
-                    color=color,
                     shape=shape,
+                    color=color,
                     shape_id=None,
                     scale=1.0,
                     orientation=0.0,
@@ -495,8 +495,8 @@ def draw_orientation_normalization(
     for factor in start_factors:
         factors = [
             Factors(
-                color=factor.color,
                 shape=factor.shape,
+                color=factor.color,
                 shape_id=None,
                 scale=scale,
                 orientation=orientation,

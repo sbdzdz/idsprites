@@ -123,8 +123,8 @@ def generate_exemplars(shapes, img_size: int):
     return [
         dataset.draw(
             ids.Factors(
-                color=(1.0, 1.0, 1.0),
                 shape=shape,
+                color=(1.0, 1.0, 1.0),
                 shape_id=None,
                 scale=1.0,
                 orientation=0.0,
