@@ -140,31 +140,6 @@ def draw_batch_and_reconstructions(
     return PIL.Image.open(buffer)
 
 
-def draw_batch_density(
-    images,
-    path: Path = repo_root / "img/images_density.png",
-    fig_height: float = 10,
-    show=False,
-):
-    """Show a batch of images averaged over the batch dimension.
-    Args:
-        images: A tensor of shape (N, C, H, W) or (N, H, W).
-        path: The path to save the image to
-        fig_height: The height of the figure in inches
-        show: Whether to show the image
-    Returns:
-        None
-    """
-    _, ax = plt.subplots(figsize=(fig_height, fig_height))
-    ax.imshow(images.mean(axis=0), cmap="Greys_r", interpolation="nearest")
-    ax.axis("off")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(path, bbox_inches="tight", pad_inches=0)
-    if show:
-        plt.show()
-    plt.close()
-
-
 def draw_shapes(
     path: Path = repo_root / "img/shapes.png",
     nrows: int = 5,
