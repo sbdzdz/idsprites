@@ -502,9 +502,8 @@ class RandomDSprites(InfiniteDSprites):
         while self.dataset_size is None or self.counter < self.dataset_size:
             self.counter += 1
             if self.shapes is not None:
-                index = np.random.choice(len(self.shapes))
-                self.current_shape_index = index
-                shape = self.shapes[index]
+                self.current_shape_index = np.random.choice(len(self.shapes))
+                shape = self.shapes[self.current_shape_index]
             else:
                 shape = self.generate_shape()
             factors = self.sample_factors().replace(
