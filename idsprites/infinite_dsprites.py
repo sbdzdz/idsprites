@@ -506,6 +506,7 @@ class RandomDSprites(InfiniteDSprites):
                 shape = self.shapes[self.current_shape_index]
             else:
                 shape = self.generate_shape()
+                self.current_shape_index += 1
             factors = self.sample_factors().replace(
                 shape=shape, shape_id=self.current_shape_id
             )
