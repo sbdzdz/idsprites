@@ -2,11 +2,9 @@
 
 from idsprites.infinite_dsprites import (
     InfiniteDSprites,
-    ContinualDSpritesMap,
+    InfiniteDSpritesMap,
     RandomDSprites,
     RandomDSpritesMap,
-    InfiniteDSpritesAnalogies,
-    InfiniteDSpritesTriplets,
     Factors,
 )
 from idsprites.continual_benchmark import (

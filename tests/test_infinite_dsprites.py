@@ -1,17 +1,14 @@
 """Test the infinite dSprites dataset."""
+
 import pytest
 import numpy as np
 
-from idsprites import (
-    InfiniteDSprites,
-    InfiniteDSpritesAnalogies,
-    InfiniteDSpritesTriplets,
-)
+from idsprites import InfiniteDSprites
 
 
 @pytest.mark.parametrize(
     "dataset_class",
-    [InfiniteDSprites, InfiniteDSpritesAnalogies, InfiniteDSpritesTriplets],
+    [InfiniteDSprites],
 )
 def test_idsprites_instantiation_with_no_parameters(dataset_class):
     """Test that the dataset can be instantiated with no parameters."""
@@ -28,7 +25,7 @@ def test_idsprites_instantiation_with_no_parameters(dataset_class):
 
 @pytest.mark.parametrize(
     "dataset_class",
-    [InfiniteDSprites, InfiniteDSpritesAnalogies, InfiniteDSpritesTriplets],
+    [InfiniteDSprites],
 )
 def test_instantiation_from_config(dataset_class):
     """Test that the dataset can be instantiated from a config."""
@@ -69,34 +66,8 @@ def test_idsprites_image(img_size, color_range, grayscale, expected_shape):
 
 
 @pytest.mark.parametrize(
-    "img_size,color_range,expected_shape",
-    [(244, ["white"], (3, 244, 244)), (256, ["red"], (3, 256, 256))],
-)
-def test_idsprites_triplets_image(img_size, color_range, expected_shape):
-    """Test that the dataset can be iterated over."""
-    dataset = InfiniteDSpritesTriplets(img_size=img_size, color_range=color_range)
-    images, _ = next(iter(dataset))
-    assert images[0].shape == expected_shape
-    assert images[0].min() >= 0.0
-    assert images[0].max() <= 1.0
-
-
-@pytest.mark.parametrize(
-    "img_size,color_range,expected_shape",
-    [(244, ["white"], (3, 244, 244)), (256, ["red"], (3, 256, 256))],
-)
-def test_idsprites_analogies_image(img_size, color_range, expected_shape):
-    """Test that the dataset can be iterated over."""
-    dataset = InfiniteDSpritesAnalogies(img_size=img_size, color_range=color_range)
-    image = next(iter(dataset))
-    assert image.shape == expected_shape
-    assert image.min() >= 0.0
-    assert image.max() <= 1.0
-
-
-@pytest.mark.parametrize(
     "dataset_class",
-    [InfiniteDSprites, InfiniteDSpritesAnalogies, InfiniteDSpritesTriplets],
+    [InfiniteDSprites],
 )
 @pytest.mark.parametrize("size", [-1, 0, 1, 5])
 def test_dataset_size(dataset_class, size):

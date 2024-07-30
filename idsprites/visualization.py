@@ -14,7 +14,6 @@ from tqdm import tqdm
 
 from idsprites import (
     InfiniteDSprites,
-    InfiniteDSpritesAnalogies,
     Factors,
 )
 
@@ -141,31 +140,6 @@ def draw_batch_and_reconstructions(
     return PIL.Image.open(buffer)
 
 
-def draw_batch_density(
-    images,
-    path: Path = repo_root / "img/images_density.png",
-    fig_height: float = 10,
-    show=False,
-):
-    """Show a batch of images averaged over the batch dimension.
-    Args:
-        images: A tensor of shape (N, C, H, W) or (N, H, W).
-        path: The path to save the image to
-        fig_height: The height of the figure in inches
-        show: Whether to show the image
-    Returns:
-        None
-    """
-    _, ax = plt.subplots(figsize=(fig_height, fig_height))
-    ax.imshow(images.mean(axis=0), cmap="Greys_r", interpolation="nearest")
-    ax.axis("off")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(path, bbox_inches="tight", pad_inches=0)
-    if show:
-        plt.show()
-    plt.close()
-
-
 def draw_shapes(
     path: Path = repo_root / "img/shapes.png",
     nrows: int = 5,
@@ -197,6 +171,7 @@ def draw_shapes(
     Returns:
         None
     """
+    path = Path(path)
     np.random.seed(seed)
     fig, axes = plt.subplots(
         nrows=nrows,
@@ -221,8 +196,8 @@ def draw_shapes(
         if fill_shape:
             if canonical:
                 factors = Factors(
-                    color=dataset.sample_factors().color,
                     shape=shape,
+                    color=dataset.sample_factors().color,
                     shape_id=None,
                     scale=1.0,
                     orientation=0.0,
@@ -272,6 +247,7 @@ def draw_shapes_animated(
     Returns:
         None
     """
+    path = Path(path)
     np.random.seed(seed)
     num_frames = fps * duration
     dataset = InfiniteDSprites(
@@ -296,8 +272,8 @@ def draw_shapes_animated(
         [
             dataset.draw(
                 Factors(
-                    color=color,
                     shape=shape,
+                    color=color,
                     shape_id=None,
                     scale=scale,
                     orientation=orientation,
@@ -404,6 +380,7 @@ def draw_shape_interpolation(
         fps: The number of frames per second
         seed: The random seed
     """
+    path = Path(path)
     np.random.seed(seed)
     dataset = InfiniteDSprites(
         img_size=img_size,
@@ -426,8 +403,8 @@ def draw_shape_interpolation(
         [
             dataset.draw(
                 Factors(
-                    color=color,
                     shape=shape,
+                    color=color,
                     shape_id=None,
                     scale=1.0,
                     orientation=0.0,
@@ -481,6 +458,7 @@ def draw_orientation_normalization(
     Returns:
         None
     """
+    path = Path(path)
     np.random.seed(seed)
     num_frames = fps * duration
     num_shapes = nrows * ncols
@@ -496,8 +474,8 @@ def draw_orientation_normalization(
     for factor in start_factors:
         factors = [
             Factors(
-                color=factor.color,
                 shape=factor.shape,
+                color=factor.color,
                 shape_id=None,
                 scale=scale,
                 orientation=orientation,
@@ -567,74 +545,3 @@ def save_animation(path, frames, nrows, ncols, fig_height, bg_color, fps):
             plt.savefig(buffer, format="png")
             plt.close()
             writer.append_data(imageio.imread(buffer))  # type: ignore
-
-
-def draw_analogy_task(
-    path: Path = repo_root / "img/analogy.png", fig_height: float = 10
-):
-    """Draw an example of the analogy task.
-    Args:
-        fig_height: The height of the figure in inches.
-    Returns:
-        None
-    """
-    dataset = InfiniteDSpritesAnalogies(img_size=512)
-    image = next(iter(dataset))
-    _, axes = plt.subplots(
-        nrows=1,
-        ncols=1,
-        figsize=(fig_height, fig_height),
-        subplot_kw={"aspect": 1.0},
-        layout="tight",
-    )
-    axes.axis("off")
-    axes.imshow(image)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(path, bbox_inches="tight", pad_inches=0.0)
-
-
-def draw_hard_analogy_task(
-    path: Path = repo_root / "img/hard_analogy.png", fig_height: float = 10
-):
-    """Draw an example of the hard analogy task.
-    Args:
-        fig_height: The height of the figure in inches.
-    Returns:
-        None
-    """
-    dataset = InfiniteDSprites(img_size=256)
-    factors_reference_source = dataset.sample_factors()
-    factors_reference_target = dataset.sample_factors()._replace(
-        shape=factors_reference_source.shape
-    )
-    factors_query_source = dataset.sample_factors()
-    factors_query_target = factors_query_source
-
-    for factor in ["scale", "orientation", "position_x", "position_y"]:
-        delta = factors_reference_target[factor] - factors_reference_source[factor]
-        factor_range = dataset.ranges[factor]
-        range_min, range_max = factor_range.min(), factor_range.max()
-        new_value = factors_query_source[factor] + delta
-        new_value = range_min + (new_value - range_min) % (range_max - range_min)
-        factors_query_target = factors_query_target._replace(**{factor: new_value})
-
-    # draw the images on a single grid
-    images = [
-        dataset.draw(factors_reference_source),
-        dataset.draw(factors_reference_target),
-        dataset.draw(factors_query_source),
-        dataset.draw(factors_query_target),
-    ]
-    _, axes = plt.subplots(
-        nrows=2,
-        ncols=2,
-        figsize=(fig_height, fig_height),
-        subplot_kw={"aspect": 1.0},
-        layout="tight",
-    )
-    for ax, img in zip(axes.flat, images):
-        ax.axis("off")
-        ax.imshow(img)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(path, bbox_inches="tight", pad_inches=0)
-    plt.close()

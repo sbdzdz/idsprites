@@ -7,7 +7,7 @@ import numpy as np
 from omegaconf import DictConfig
 from torch.utils.data import Dataset, random_split
 
-from idsprites import ContinualDSpritesMap
+from idsprites import InfiniteDSpritesMap
 
 
 class ContinualBenchmark:
@@ -81,7 +81,7 @@ class ContinualBenchmark:
         position_x_range = np.linspace(0, 1, n)
         position_y_range = np.linspace(0, 1, n)
 
-        dataset = ContinualDSpritesMap(
+        dataset = InfiniteDSpritesMap(
             img_size=self.img_size,
             shapes=shapes,
             shape_ids=shape_ids,
@@ -160,7 +160,7 @@ class ContinualBenchmarkRehearsal(ContinualBenchmark):
         )
         task_samples = [train_task.dataset.data[idx] for idx in task_indices]
 
-        train_dataset = ContinualDSpritesMap(
+        train_dataset = InfiniteDSpritesMap(
             img_size=self.img_size,
             dataset_size=1,
             shapes=self.shapes,
@@ -181,7 +181,7 @@ class BalancedDataset:
         self.img_size = img_size
         self.shapes = shapes
 
-        self.dataset = ContinualDSpritesMap(
+        self.dataset = InfiniteDSpritesMap(
             img_size=self.img_size,
             dataset_size=1,
             shapes=self.shapes,
