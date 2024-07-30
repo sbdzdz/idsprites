@@ -171,6 +171,7 @@ def draw_shapes(
     Returns:
         None
     """
+    path = Path(path)
     np.random.seed(seed)
     fig, axes = plt.subplots(
         nrows=nrows,
@@ -246,6 +247,7 @@ def draw_shapes_animated(
     Returns:
         None
     """
+    path = Path(path)
     np.random.seed(seed)
     num_frames = fps * duration
     dataset = InfiniteDSprites(
@@ -378,6 +380,7 @@ def draw_shape_interpolation(
         fps: The number of frames per second
         seed: The random seed
     """
+    path = Path(path)
     np.random.seed(seed)
     dataset = InfiniteDSprites(
         img_size=img_size,
@@ -455,6 +458,7 @@ def draw_orientation_normalization(
     Returns:
         None
     """
+    path = Path(path)
     np.random.seed(seed)
     num_frames = fps * duration
     num_shapes = nrows * ncols
