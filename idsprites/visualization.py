@@ -224,7 +224,7 @@ def draw_shapes_animated(
     frame_color: str = "darkgray",
     background_color: str = "lightgray",
     orientation_marker_color: str = "black",
-    duration: int = 8,
+    duration: float = 8,
     fps: int = 60,
     factor: str = None,
     seed: int = 0,
@@ -249,7 +249,7 @@ def draw_shapes_animated(
     """
     path = Path(path)
     np.random.seed(seed)
-    num_frames = fps * duration
+    num_frames = int(fps * duration)
     dataset = InfiniteDSprites(
         img_size=img_size,
         color_range=COLORS,
