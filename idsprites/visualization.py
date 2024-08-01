@@ -518,7 +518,7 @@ def generate_normalization_sequence(factor, num_frames):
 def save_animation(path, frames, nrows, ncols, fig_height, bg_color, fps):
     """Save an animation to a GIF file."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with imageio.get_writer(path, mode="I", fps=fps) as writer:
+    with imageio.get_writer(path, mode="I", fps=fps, loop=0) as writer:
         for frame in tqdm(frames):
             _, axes = plt.subplots(
                 nrows,
@@ -537,4 +537,6 @@ def save_animation(path, frames, nrows, ncols, fig_height, bg_color, fps):
                 ax.imshow(image, cmap="Greys_r")
             plt.savefig(buffer, format="png")
             plt.close()
-            writer.append_data(imageio.imread(buffer))  # type: ignore
+
+            # buffer.seek(0)
+            writer.append_data(imageio.imread(buffer))
