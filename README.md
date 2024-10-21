@@ -40,3 +40,18 @@ source venv/bin/activate
 python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
+
+## Citation
+
+If you use this work in your research, please consider citing:
+
+```
+@article{dziadzio2023disentangled,
+  title={Disentangled Continual Learning: Separating Memory Edits from Model Updates},
+  author={Dziadzio, Sebastian and Y{\i}ld{\i}z, {\c{C}}a{\u{g}}atay and van de Ven, Gido M and Trzci{\'n}ski, Tomasz and Tuytelaars, Tinne and Bethge, Matthias},
+  journal={arXiv preprint arXiv:2312.16731},
+  year={2023}
+}
+```
+
+Thanks!
